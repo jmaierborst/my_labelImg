@@ -2,14 +2,34 @@
 # -*- coding: utf8 -*-
 import sys
 import os
+import csv
 from xml.etree import ElementTree
 from xml.etree.ElementTree import Element, SubElement
 from lxml import etree
 import codecs
 from libs.constants import DEFAULT_ENCODING
+#from data import predefined_classes
 
 TXT_EXT = '.txt'
 ENCODE_METHOD = DEFAULT_ENCODING
+
+class_names_coco = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
+               'bus', 'train', 'truck', 'boat', 'traffic light',
+               'fire hydrant', 'stop sign', 'parking meter', 'bench', 'bird',
+               'cat', 'dog', 'horse', 'sheep', 'cow', 'elephant', 'bear',
+               'zebra', 'giraffe', 'backpack', 'umbrella', 'handbag', 'tie',
+               'suitcase', 'frisbee', 'skis', 'snowboard', 'sports ball',
+               'kite', 'baseball bat', 'baseball glove', 'skateboard',
+               'surfboard', 'tennis racket', 'bottle', 'wine glass', 'cup',
+               'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple',
+               'sandwich', 'orange', 'broccoli', 'carrot', 'hot dog', 'pizza',
+               'donut', 'cake', 'chair', 'couch', 'potted plant', 'bed',
+               'dining table', 'toilet', 'tv', 'laptop', 'mouse', 'remote',
+               'keyboard', 'cell phone', 'microwave', 'oven', 'toaster',
+               'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors',
+               'teddy bear', 'hair drier', 'toothbrush']
+
+class_names = ['person','mask','cap','glasses','glove','bloodyGlove','wrong']
 
 class YOLOWriter:
 
@@ -34,11 +54,11 @@ class YOLOWriter:
         ymin = box['ymin']
         ymax = box['ymax']
 
-        xcen = float((xmin + xmax)) / 2 / self.imgSize[1]
-        ycen = float((ymin + ymax)) / 2 / self.imgSize[0]
-
-        w = float((xmax - xmin)) / self.imgSize[1]
-        h = float((ymax - ymin)) / self.imgSize[0]
+#        xcen = float((xmin + xmax)) / 2 / self.imgSize[1]
+#        ycen = float((ymin + ymax)) / 2 / self.imgSize[0]
+#
+#        w = float((xmax - xmin)) / self.imgSize[1]
+#        h = float((ymax - ymin)) / self.imgSize[0]
 
         # PR387
         boxName = box['name']
@@ -47,7 +67,7 @@ class YOLOWriter:
 
         classIndex = classList.index(boxName)
 
-        return classIndex, xcen, ycen, w, h
+        return self.localImgPath, xmin, ymin, xmax, ymax, class_names[classIndex]
 
     def save(self, classList=[], targetFile=None):
 
@@ -64,21 +84,23 @@ class YOLOWriter:
             out_file = codecs.open(targetFile, 'w', encoding=ENCODE_METHOD)
             classesFile = os.path.join(os.path.dirname(os.path.abspath(targetFile)), "classes.txt")
             out_class_file = open(classesFile, 'w')
-
+            
 
         for box in self.boxlist:
-            classIndex, xcen, ycen, w, h = self.BndBox2YoloLine(box, classList)
-            # print (classIndex, xcen, ycen, w, h)
-            out_file.write("%d %.6f %.6f %.6f %.6f\n" % (classIndex, xcen, ycen, w, h))
-
-        # print (classList)
-        # print (out_class_file)
+            # BndBox2YoloLine returns image_path, xmin, ymin, xmax, ymax, className
+            image_path, xmin, ymin, xmax, ymax, className = self.BndBox2YoloLine(box, classList)
+            #csvRow = [image_path, xmin, ymin, xmax, ymax, className]
+            
+            image_path = image_path.replace('\\141.19.87.238','root')
+            image_path = image_path.replace('\\','/')   #actually replaces \ with /
+           
+            out_file.write("{},{},{},{},{},{}\n" .format(image_path, xmin, ymin, xmax, ymax, className))
+            
         for c in classList:
             out_class_file.write(c+'\n')
 
         out_class_file.close()
         out_file.close()
-
 
 
 class YoloReader:
@@ -139,8 +161,9 @@ class YoloReader:
     def parseYoloFormat(self):
         bndBoxFile = open(self.filepath, 'r')
         for bndBox in bndBoxFile:
-            classIndex, xcen, ycen, w, h = bndBox.split(' ')
-            label, xmin, ymin, xmax, ymax = self.yoloLine2Shape(classIndex, xcen, ycen, w, h)
-
+            filename, xmin, ymin, xmax, ymax, className = bndBox.split(',')
+            className = className.replace('\n','')                              #
+            classIndex = class_names.index(className)
+            label = self.classes[int(classIndex)]
             # Caveat: difficult flag is discarded when saved as yolo format.
             self.addShape(label, xmin, ymin, xmax, ymax, False)
