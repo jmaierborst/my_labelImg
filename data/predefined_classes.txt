@@ -1,7 +1,8 @@
 person
 mask
 cap
-glasses
 glove
-bloodyGlove
-wrong
+wrong_mask
+wrong_cap
+wrong_hand
+wrong_dressed

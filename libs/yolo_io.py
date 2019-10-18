@@ -8,7 +8,8 @@ from xml.etree.ElementTree import Element, SubElement
 from lxml import etree
 import codecs
 from libs.constants import DEFAULT_ENCODING
-#from data import predefined_classes
+#import predefined_classes
+
 
 TXT_EXT = '.txt'
 ENCODE_METHOD = DEFAULT_ENCODING
@@ -29,7 +30,13 @@ class_names_coco = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
                'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors',
                'teddy bear', 'hair drier', 'toothbrush']
 
-class_names = ['person','mask','cap','glasses','glove','bloodyGlove','wrong']
+#with open('C:\jmaierborst\labelImg\data\predefined_classes.txt', 'r') as f:
+#    class_names = f.readlines
+#    f.close()
+#
+#print(class_names)
+
+class_names = ['person','mask','cap','glove','wrong_mask','wrong_cap','wrong_hand','wrong_dressed']
 
 class YOLOWriter:
 
